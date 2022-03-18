@@ -299,7 +299,10 @@ void HorizontalRuler::PaintRuler()
 	drawRc.left = nRulerStartX;
 	drawRc.right = rc.right;
 	FillRect(hDC, &drawRc, (HBRUSH)GetStockObject(DKGRAY_BRUSH));//SH DARK this works as background
-	
+
+	SelectObject(hDC, GetStockObject(DC_PEN));
+	SetDCPenColor(hDC, RGB(120, 120, 120));//SH DARK lines color
+
 	//線の描画
 	if( nScrollMod == 0)
 	{
@@ -312,16 +315,12 @@ void HorizontalRuler::PaintRuler()
 			SetTextColor(hDC, RGB(223, 223, 223));//SH DARK this is text color for number 0
 			ExtTextOut(hDC, nRulerStartX+1, rc.top, ETO_CLIPPED, &rc, sColumNumber, nLength, 0);
 
-			HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-			SetDCBrushColor(hDC, RGB(255, 0, 0));
-			SetDCPenColor(hDC, RGB(255, 0, 0));
 			MoveToEx(hDC, nRulerStartX, rc.top, NULL);
-
 			LineTo(hDC, nRulerStartX, rc.top+this->nTopMargin);
 		}
 		else
 		{
-			MoveToEx(hDC, nRulerStartX, rc.top+this->nCharHeight, NULL);
+			MoveToEx(hDC, nRulerStartX, rc.top+this->nCharHeight, NULL);//SH DARK this looks useless
 			LineTo(hDC, nRulerStartX, rc.top+this->nTopMargin);
 		}
 		if( nStartCol==nCaret )
@@ -349,6 +348,11 @@ void HorizontalRuler::PaintRuler()
 
 			MoveToEx(hDC, tmp, rc.top, NULL);
 			LineTo(hDC, tmp, rc.top+this->nTopMargin);
+		}
+		else if ((nStartCol + i) % 5 == 0)//SH DARK for middle of 10-chars interval additonal longer line
+		{
+			MoveToEx(hDC, tmp, rc.top + this->nCharHeight - 5, NULL);//5px longer to the top
+			LineTo(hDC, tmp, rc.top + this->nTopMargin);
 		}
 		else
 		{
