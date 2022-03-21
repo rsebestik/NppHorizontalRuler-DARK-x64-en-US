@@ -35,3 +35,6 @@ http://sourceforge.jp/projects/opensource/wiki/licenses%2Fzlib_libpng_license
 #define IDC_RADIO_FONT_EDITOR_SIZE              1004
 #define IDC_COMBO_FIX_FONT_SIZE                 1006
 #define IDC_RADIO_FIX_FONT_SIZE                 1007
+#define IDC_COLOR_BACKGROUND_INPUT              1008
+#define IDC_COLOR_LINES_INPUT                   1009
+#define IDC_COLOR_TEXT_INPUT                    1010

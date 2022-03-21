@@ -34,6 +34,7 @@ http://sourceforge.jp/projects/opensource/wiki/licenses%2Fzlib_libpng_license
 #include "menuCmdID.h"
 
 #include "ini.h"
+#include "shlwapi.h"
 
 //メモリリーク検査
 #ifdef _DEBUG
@@ -48,6 +49,8 @@ http://sourceforge.jp/projects/opensource/wiki/licenses%2Fzlib_libpng_license
 #include <Commctrl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <tchar.h>
+//using namespace std;
 
 extern WNDPROC oldWndProc;
 
@@ -70,7 +73,10 @@ HorizontalRuler::HorizontalRuler() :
 	tabHwnd(0),
 	enable(1),
 	bFontFix(false),
-	nFontSize(10)
+	nFontSize(10),
+	backgroundColor(_T("0x3B4045")),
+	linesColor(_T("0x898989")),
+	textColor(_T("0xDFDFDF"))
 {
 }
 HorizontalRuler::~HorizontalRuler(){
@@ -87,6 +93,11 @@ HorizontalRuler::~HorizontalRuler(){
 
 	
 	Ini::getInstance()->writeDate(TEXT("HorizontalRuler"), TEXT("Visible"), this->enable);
+
+	//SH new - commented out, as it is writing directly to INI when value is changed 
+	// this works -> writing on exit current value to INI (when it was missing)
+	//BUT IT IS NOT WORKING WHEN IT REWRITES value
+	//Ini::getInstance()->writeDate(TEXT("HorizontalRuler"), TEXT("BackgroundColor"), this->backgroundColor);
 }
 
 void HorizontalRuler::Init(HWND npp, HWND scintilla, HWND tab)
@@ -114,7 +125,38 @@ void HorizontalRuler::Init(HWND npp, HWND scintilla, HWND tab)
 
 	Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("Visible"), &this->enable);
 
+	//SH this works - either buf is empty, when INI is empty (and this->backgroundColor is prefilled by default value)
+	//or buf contains actual INI value, which is set to this->backgroundColor
+	this->backgroundColor = GetIniBgColor();
+
 	return;
+}
+TCHAR* HorizontalRuler::GetIniBgColor() {
+	TCHAR buf[MAX_PATH];
+	Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("BackgroundColor"), buf, MAX_PATH);
+	if (_tcslen(buf) != 0) {
+		Dprintf("=====================returning BackgroundColor %s from INI file\n", buf);
+		return buf;
+	}
+	return this->backgroundColor;
+}
+TCHAR* HorizontalRuler::GetIniLinesColor() {
+	TCHAR buf[MAX_PATH];
+	Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("LinesColor"), buf, MAX_PATH);
+	if (_tcslen(buf) != 0) {
+		Dprintf("=====================returning LinesColor %s from INI file\n", buf);
+		return buf;
+	}
+	return this->linesColor;
+}
+TCHAR* HorizontalRuler::GetIniTextColor() {
+	TCHAR buf[MAX_PATH];
+	Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("TextColor"), buf, MAX_PATH);
+	if (_tcslen(buf) != 0) {
+		Dprintf("=====================returning TextColor %s from INI file\n", buf);
+		return buf;
+	}
+	return this->textColor;
 }
 int HorizontalRuler::IsInit()
 {
@@ -295,13 +337,24 @@ void HorizontalRuler::PaintRuler()
 
 	drawRc = rc;
 	drawRc.right = nRulerStartX;
-	FillRect(hDC, &drawRc, (HBRUSH)GetStockObject(DKGRAY_BRUSH));//SH DARK this is background of left part above line numbers
+
+	//SH problem with storing color in field, lets ensure correct value from INI
+	this->backgroundColor = GetIniBgColor();
+	COLORREF backColor = GetColorRef(this->backgroundColor);
+
+	FillRect(hDC, &drawRc, ::CreateSolidBrush(backColor));//SH this is background of left part above line numbers
 	drawRc.left = nRulerStartX;
 	drawRc.right = rc.right;
-	FillRect(hDC, &drawRc, (HBRUSH)GetStockObject(DKGRAY_BRUSH));//SH DARK this works as background
+	FillRect(hDC, &drawRc, ::CreateSolidBrush(backColor));//SH this is all other background
+
+	//SH problem with storing color in field, lets ensure correct value from INI
+	this->linesColor = GetIniLinesColor();
+	COLORREF linesColor = GetColorRef(this->linesColor);
+	this->textColor = GetIniTextColor();
+	COLORREF textColor = GetColorRef(this->textColor);
 
 	SelectObject(hDC, GetStockObject(DC_PEN));
-	SetDCPenColor(hDC, RGB(120, 120, 120));//SH DARK lines color
+	SetDCPenColor(hDC, linesColor);//SH lines color
 
 	//線の描画
 	if( nScrollMod == 0)
@@ -312,19 +365,15 @@ void HorizontalRuler::PaintRuler()
 			memset(sColumNumber, 0, sizeof(sColumNumber));
 			nLength = swprintf_s(sColumNumber, 10, L"%d", nStartCol);
 			SetBkMode(hDC, TRANSPARENT);
-			SetTextColor(hDC, RGB(223, 223, 223));//SH DARK this is text color for number 0
+			SetTextColor(hDC, textColor);//SH this is text color for number 0
 			ExtTextOut(hDC, nRulerStartX+1, rc.top, ETO_CLIPPED, &rc, sColumNumber, nLength, 0);
 
-			HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-			SetDCBrushColor(hDC, RGB(255, 0, 0));
-			SetDCPenColor(hDC, RGB(255, 0, 0));
 			MoveToEx(hDC, nRulerStartX, rc.top, NULL);
-
 			LineTo(hDC, nRulerStartX, rc.top+this->nTopMargin);
 		}
 		else
 		{
-			MoveToEx(hDC, nRulerStartX, rc.top+this->nCharHeight, NULL);//SH DARK this looks useless
+			MoveToEx(hDC, nRulerStartX, rc.top+this->nCharHeight, NULL);//SH this looks useless
 			LineTo(hDC, nRulerStartX, rc.top+this->nTopMargin);
 		}
 		if( nStartCol==nCaret )
@@ -334,7 +383,7 @@ void HorizontalRuler::PaintRuler()
 			rcCaret.top = rc.top+this->nCharHeight;
 			rcCaret.right = rcCaret.left + this->nCharWidth - 3;
 			rcCaret.bottom = rc.bottom - 1;
-			FillRect(hDC, &rcCaret, (HBRUSH)GetStockObject(LTGRAY_BRUSH));//SH DARK this is current column on selected row marker (only for column 0)
+			FillRect(hDC, &rcCaret, ::CreateSolidBrush(linesColor));//SH this is current column on selected row marker (only for column 0)
 		}
 	}
 
@@ -346,14 +395,14 @@ void HorizontalRuler::PaintRuler()
 			memset(sColumNumber, 0, sizeof(sColumNumber));
 			nLength = swprintf_s(sColumNumber, 10, L"%d", nStartCol+i);
 			SetBkMode(hDC, TRANSPARENT);
-			SetTextColor(hDC, RGB(223, 223, 223));//SH DARK this is text color for numbers >=10
+			SetTextColor(hDC, textColor);//SH this is text color for numbers >=10
 			ExtTextOut(hDC, tmp+1, rc.top, ETO_CLIPPED, &rc, sColumNumber, nLength, 0);
 			//TextOut(hDC, tmp+1, rc.top, sColumNumber, nLength);
 
 			MoveToEx(hDC, tmp, rc.top, NULL);
 			LineTo(hDC, tmp, rc.top+this->nTopMargin);
 		}
-		else if ((nStartCol + i) % 5 == 0)//SH DARK for middle of 10-chars interval additonal longer line
+		else if ((nStartCol + i) % 5 == 0)//SH for middle of 10-chars interval additonal longer line
 		{
 			MoveToEx(hDC, tmp, rc.top + this->nCharHeight - 5, NULL);//5px longer to the top
 			LineTo(hDC, tmp, rc.top + this->nTopMargin);
@@ -370,11 +419,16 @@ void HorizontalRuler::PaintRuler()
 			rcCaret.top = rc.top+this->nCharHeight;
 			rcCaret.right = rcCaret.left + this->nCharWidth - 3;
 			rcCaret.bottom = rc.bottom - 1;
-			FillRect(hDC, &rcCaret, (HBRUSH)GetStockObject(LTGRAY_BRUSH));//SH DARK this is current column on selected row marker
+			FillRect(hDC, &rcCaret, ::CreateSolidBrush(linesColor));//SH this is current column on selected row marker
 		}
 	}
 	SelectObject(hDC, oldFont);
 	ReleaseDC(this->tabHwnd, hDC);
+}
+COLORREF HorizontalRuler::GetColorRef(TCHAR* hexColor) {
+	int rgb;
+	StrToIntEx(hexColor, STIF_SUPPORT_HEX, &rgb);
+	return (((rgb & 0x000000FF) << 16) | (rgb & 0x0000FF00) | ((rgb & 0x00FF0000) >> 16));
 }
 int HorizontalRuler::GetCaretPos()
 {
@@ -427,7 +481,6 @@ int HorizontalRuler::GetCaretPos()
 	return nCaret;
 }
 void HorizontalRuler::SendSizeToMain(){
-	
 	RECT rc;
 	GetWindowRect(this->nppHwnd, &rc);
 	SendMessage(this->nppHwnd, WM_SIZE, 0, MAKELPARAM(rc.right-rc.left, rc.bottom-rc.top));

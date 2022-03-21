@@ -68,11 +68,18 @@ private:
 public:
 	int nFontSize;
 	bool bFontFix;
+	TCHAR* backgroundColor;
+	TCHAR* linesColor;
+	TCHAR* textColor;
 
 	HorizontalRuler();
 	~HorizontalRuler();
 
 	void HorizontalRuler::Init(HWND npp, HWND scintilla, HWND tab);
+	TCHAR* GetIniBgColor();
+	TCHAR* GetIniLinesColor();
+	TCHAR* GetIniTextColor();
+	COLORREF GetColorRef(TCHAR* hexColor);
 	int IsInit();
 	int	 GetEnable(){ return this->enable; };
 	void SetEnable(int flag){ this->enable = flag; };

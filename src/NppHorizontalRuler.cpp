@@ -34,6 +34,7 @@ http://sourceforge.jp/projects/opensource/wiki/licenses%2Fzlib_libpng_license
 
 #include <Tchar.h>
 #include <Commctrl.h>
+#include "ini.h"
 
 extern HINSTANCE g_DllhInst;
 extern NppData nppData;
@@ -353,7 +354,7 @@ INT_PTR CALLBACK OptionDlgProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 		TCHAR tsSize[5];
 
 		comboHwnd = GetDlgItem(hWndDlg, IDC_COMBO_FIX_FONT_SIZE);
-		for(int i=8; i<25; i++)
+		for(int i=6; i<25; i++)
 		{
 			_itot_s(i, tsSize, 5, 10);
 			SendMessage(comboHwnd, CB_ADDSTRING, 0, (LPARAM)tsSize);
@@ -376,6 +377,39 @@ INT_PTR CALLBACK OptionDlgProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 			SendMessage(GetDlgItem(hWndDlg, IDC_RADIO_FONT_EDITOR_SIZE), BM_SETCHECK, (WPARAM)BST_CHECKED, 0);
 			EnableWindow( GetDlgItem(hWndDlg, IDC_COMBO_FIX_FONT_SIZE), FALSE);
 		}
+		
+		TCHAR* color;
+
+		TCHAR bgBuf[MAX_PATH];
+		Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("BackgroundColor"), bgBuf, MAX_PATH);
+		if (_tcslen(bgBuf) != 0) {
+			color = bgBuf;
+		}
+		else {
+			color = mainHRuler.backgroundColor;
+		}
+		SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_BACKGROUND_INPUT), WM_SETTEXT, 0, (LPARAM)color);
+
+		TCHAR lnBuf[MAX_PATH];
+		Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("LinesColor"), lnBuf, MAX_PATH);
+		if (_tcslen(lnBuf) != 0) {
+			color = lnBuf;
+		}
+		else {
+			color = mainHRuler.linesColor;
+		}
+		SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_LINES_INPUT), WM_SETTEXT, 0, (LPARAM)color);
+
+		TCHAR txBuf[MAX_PATH];
+		Ini::getInstance()->readDate(TEXT("HorizontalRuler"), TEXT("TextColor"), txBuf, MAX_PATH);
+		if (_tcslen(txBuf) != 0) {
+			color = txBuf;
+		}
+		else {
+			color = mainHRuler.textColor;
+		}
+		SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_TEXT_INPUT), WM_SETTEXT, 0, (LPARAM)color);
+
 
 		break;
 	case WM_COMMAND:
@@ -403,6 +437,27 @@ INT_PTR CALLBACK OptionDlgProc(HWND hWndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 			nSize = _ttoi(buf);
 			mainHRuler.nFontSize = nSize;
 			subHRuler.nFontSize = nSize;
+
+			TCHAR backBuffer[10];
+			SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_BACKGROUND_INPUT), WM_GETTEXT, 1024, (LPARAM)backBuffer);
+			Dprintf("=====================Setting mainHRuler+subHRuler.backgroundColor from %s to %s\n", mainHRuler.backgroundColor, backBuffer);
+			mainHRuler.backgroundColor = backBuffer;
+			subHRuler.backgroundColor = backBuffer;
+			Ini::getInstance()->writeDate(TEXT("HorizontalRuler"), TEXT("BackgroundColor"), mainHRuler.backgroundColor);
+
+			TCHAR lnBuffer[10];
+			SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_LINES_INPUT), WM_GETTEXT, 1024, (LPARAM)lnBuffer);
+			Dprintf("=====================Setting mainHRuler+subHRuler.linesColor from %s to %s\n", mainHRuler.linesColor, lnBuffer);
+			mainHRuler.linesColor = lnBuffer;
+			subHRuler.linesColor = lnBuffer;
+			Ini::getInstance()->writeDate(TEXT("HorizontalRuler"), TEXT("LinesColor"), mainHRuler.linesColor);
+
+			TCHAR txBuffer[10];
+			SendMessage(GetDlgItem(hWndDlg, IDC_COLOR_TEXT_INPUT), WM_GETTEXT, 1024, (LPARAM)txBuffer);
+			Dprintf("=====================Setting mainHRuler+subHRuler.textColor from %s to %s\n", mainHRuler.textColor, txBuffer);
+			mainHRuler.textColor = txBuffer;
+			subHRuler.textColor = txBuffer;
+			Ini::getInstance()->writeDate(TEXT("HorizontalRuler"), TEXT("TextColor"), mainHRuler.textColor);
 
 			EndDialog(hWndDlg, 1);
 			break;
